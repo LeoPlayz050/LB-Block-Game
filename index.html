@@ -107,9 +107,9 @@
     function update(delta) {
       if (gameOver || paused) return;
 
-      player.vy += gravity;
+      player.vy += gravity * delta * 60;
       if (player.vy > 7) player.vy = 7;
-      player.y += player.vy;
+      player.y += player.vy * delta * 60;
 
       if (player.y > groundY) {
         player.y = groundY;
