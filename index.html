@@ -45,7 +45,7 @@
 
     let obstacles = [];
 
-    let obstacleSpeed = 1;
+    let obstacleSpeed = 1.5;
     let score = 0;
     let gameOver = false;
     let paused = false;
@@ -213,7 +213,7 @@ function gameLoop(time = 0) {
     function restartGame() {
       clearTimeout(obstacleSpawnTimeout);
       obstacles = [];
-      obstacleSpeed = 1;
+      obstacleSpeed = 1.5;
       score = 0;
       gameOver = false;
       player.y = groundY;
