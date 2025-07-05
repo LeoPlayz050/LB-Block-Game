@@ -30,7 +30,8 @@
     const ctx = canvas.getContext('2d');
 
     const groundY = 221; 
-    const gravity = 0.2;   
+    const gravity = 0.06;  
+    const jumpVelocity = -3;
 
     const player = {
       x: 50,
@@ -65,9 +66,9 @@
 }
 
   if ((e.code === 'Space' || e.code === 'ArrowUp') && !gameOver && !paused) {
-    if (player.jumpCount < 2) {
-      player.vy = -6.5;
-      player.jumpCount++;
+   if (player.jumpCount < 2) {
+    player.vy = jumpVelocity;
+    player.jumpCount++;
     }
   }
 
@@ -200,7 +201,7 @@
     let lastTime = 0;
 
 function gameLoop(time = 0) {
-  const delta = (time - lastTime) / 1000; // convert ms to seconds
+  const delta = (time - lastTime) / 1000;
   lastTime = time;
 
   update(delta);
