@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Jumping Block Game</title>
+  <style>
+    body {
+      margin: 0;
+      background: #222;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: monospace, monospace;
+      color: white;
+      overflow: hidden;
+    }
+    canvas {
+      background: #333;
+      border: 2px solid #555;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="600" height="250"></canvas>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    const groundY = 221; 
+    const gravity = 0.5;   
+
+    const player = {
+      x: 50,
+      y: groundY,
+      width: 30,
+      height: 30,
+      vy: 0,  
+      jumping: false,
+      jumpCount: 0,
+    };
+
+    let obstacles = [];
+
+    let obstacleSpeed = 3;
+    let score = 0;
+    let gameOver = false;
+    let paused = false;
+    let gameStarted = false;
+    let highScore = localStorage.getItem('highScore') || 0;
+    let obstacleSpawnTimeout;
+
+    window.addEventListener('keydown', (e) => {
+  if (e.code === 'Enter' && !gameOver) {
+    paused = !paused;
+    return;
+  }
+
+  if (!gameStarted && e.code === 'Space') {
+  gameStarted = true;
+  spawnObstacle();
+  return;
+}
+
+  if ((e.code === 'Space' || e.code === 'ArrowUp') && !gameOver && !paused) {
+    if (player.jumpCount < 2) {
+      player.vy = -10;
+      player.jumpCount++;
+    }
+  }
+
+  if (gameOver && e.code === 'Space') {
+    restartGame();
+  }
+});
+
+  function spawnObstacle() {
+  if (gameOver) return;
+
+  const minSize = 20;
+  const maxSize = 50;
+
+  const width = Math.floor(Math.random() * (maxSize - minSize)) + minSize;
+  const height = Math.floor(Math.random() * (maxSize - minSize)) + minSize;
+
+  obstacles.push({
+    x: canvas.width,
+    y: groundY + (30 - height),
+    width,
+    height,
+  });
+
+  obstacleSpawnTimeout = setTimeout(spawnObstacle, 1000 + Math.random() * 2000);
+}
+
+    function isColliding(a, b) {
+      return (
+        a.x < b.x + b.width &&
+        a.x + a.width > b.x &&
+        a.y < b.y + b.height &&
+        a.y + a.height > b.y
+      );
+    }
+
+    function update() {
+      if (gameOver || paused) return;
+
+      player.vy += gravity;
+      player.y += player.vy;
+
+      if (player.y > groundY) {
+        player.y = groundY;
+        player.vy = 0;
+        player.jumping = false;
+        player.jumpCount = 0;
+      }
+
+      for (let i = obstacles.length - 1; i >= 0; i--) {
+        obstacles[i].x -= obstacleSpeed;
+
+        if (isColliding(player, obstacles[i])) {
+          gameOver = true;
+        }
+
+        if (obstacles[i].x + obstacles[i].width < 0) {
+          obstacles.splice(i, 1);
+          if (!gameOver) {
+            score++;
+             if (score > highScore) {
+             highScore = score;
+             localStorage.setItem('highScore', highScore);
+             } 
+            obstacleSpeed *= 1.05;
+          }
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = '#888';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, groundY + player.height);
+      ctx.lineTo(canvas.width, groundY + player.height);
+      ctx.stroke();
+
+      ctx.fillStyle = '#ff0';
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+
+      ctx.fillStyle = '#f33';
+      obstacles.forEach(obstacle => {
+        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+      });
+
+      ctx.fillStyle = 'white';
+      ctx.font = '20px monospace';
+      ctx.fillText(`Score: ${score} | High Score: ${highScore}`, 150, 25);
+
+      if (gameOver) {
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'white';
+        ctx.font = '30px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2 - 20);
+        ctx.font = '18px monospace';
+        ctx.fillText('Press Space to Restart', canvas.width / 2, canvas.height / 2 + 20);
+      }
+      if (paused && !gameOver) {
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = 'white';
+      ctx.font = '30px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
+      }
+
+      if (!gameStarted) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = 'white';
+      ctx.font = '30px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('Jumping Block Game', canvas.width / 2, canvas.height / 2 - 30);
+
+      ctx.font = '20px monospace';
+      ctx.fillText('Press Space to Start', canvas.width / 2, canvas.height / 2 + 10);
+      return;
+      }
+
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function restartGame() {
+      clearTimeout(obstacleSpawnTimeout);
+      obstacles = [];
+      obstacleSpeed = 3;
+      score = 0;
+      gameOver = false;
+      player.y = groundY;
+      player.vy = 0;
+      player.jumping = false;
+      spawnObstacle();
+    }
+
+    gameLoop();
+  </script>
+</body>
+</html>
